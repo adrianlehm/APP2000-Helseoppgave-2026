@@ -1,0 +1,52 @@
+name: GitHub Flow (Manual Dispatch)
+
+on:
+  push:
+    branches:
+      - '**'
+
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Velg hvilket miljø du vil distribuere til:'
+        type: choice
+        required: true
+        default: 'test'
+        options:
+          - test
+          - ready-to-deploy
+
+jobs:
+  # UTVIKLING: Kjører automatisk på feature-brancher
+  deploy-to-dev:
+    name: Deploy to Development
+    if: github.event_name == 'push' && github.ref != 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - name: Sjekk ut kode
+        uses: actions/checkout@v4
+
+      # Her lagrer vi koden som en "utviklings-pakke" i GitHub
+      - name: Distribuer (Lagre) til Utvikling
+        uses: actions/upload-artifact@v4
+        with:
+          name: development-build
+          path: . # Lagrer alle filene i prosjektet (HTML, CSS, JS)
+
+  # MANUELL DISTRIBUSJON: Kjører når du trykker på knappen på GitHub
+  manual-deploy:
+    name: Manual Deployment
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - name: Sjekk ut kode
+        uses: actions/checkout@v4
+
+      # Her simulerer vi distribusjonen ved å gi pakken navn etter miljøet du valgte
+      - name: Distribuer (Lagre) til valgt miljø
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.inputs.environment }}-build
+          path: .
